@@ -6,9 +6,9 @@
     <title>짱 라오쉬 수행 연습 (Ultimate)</title>
     <style>
         /* [디자인] 기본 설정 */
-        html { overflow-y: scroll; } /* 스크롤 밀림 방지 */
+        html { overflow-y: scroll; }
         
-        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background-color: #f7f9fc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; transition: 0.3s; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background-color: #f7f9fc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; transition: 0.3s; overflow-x: hidden; }
         .card { background: white; padding: 40px 30px; border-radius: 20px; box-shadow: 0 12px 24px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 550px; margin-bottom: 20px; position: relative; transition: 0.3s; z-index: 10; }
         h2 { color: #2c3e50; margin: 0 0 10px 0; letter-spacing: -1px; }
         .subtitle { color: #7f8c8d; font-size: 0.95em; margin-bottom: 10px; line-height: 1.6; padding-bottom: 15px; }
@@ -47,18 +47,31 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
         }
 
-        /* [워터마크] 서명 스타일 */
+        /* [워터마크 수정됨] - 폭죽 이스터에그용 설정 */
         .watermark {
             position: fixed;
             bottom: 15px;
             right: 20px;
-            font-size: 13px;
-            color: #aaa;
-            font-family: 'Brush Script MT', 'Comic Sans MS', cursive; /* 필기체 느낌 */
-            opacity: 0.6;
-            pointer-events: none; /* 클릭 방해 안 하게 */
+            font-size: 14px;
+            color: #888;
+            /* 귀여운 손글씨 느낌 폰트 우선 적용 */
+            font-family: 'Segoe Print', 'Chalkboard SE', 'Comic Sans MS', sans-serif;
+            opacity: 0.3; /* 투명도 증가 (더 흐리게) */
+            cursor: pointer; /* 클릭 가능 표시 */
             z-index: 9999;
-            font-style: italic;
+            user-select: none;
+            transition: opacity 0.3s, transform 0.2s;
+        }
+        .watermark:hover { opacity: 0.8; transform: scale(1.05); }
+        .watermark:active { transform: scale(0.95); }
+
+        /* 폭죽 입자 스타일 */
+        .firework-particle {
+            position: fixed;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
         }
 
         /* 오답/개발자 모드 UI */
@@ -104,7 +117,7 @@
 </head>
 <body>
 
-    <div class="watermark">made by 재훈 with Gemini</div>
+    <div class="watermark" onclick="triggerFireworks(event)">made by 재훈 with Gemini</div>
 
     <div class="card" id="mainCard">
         <h2 id="mainTitle">🇨🇳 짱 라오쉬 수행 연습</h2>
@@ -151,6 +164,45 @@
     <div id="textBody"></div>
 
     <script>
+        // ==========================================
+        // [0] 이스터에그: 폭죽 효과 (Simple Fireworks)
+        // ==========================================
+        function triggerFireworks(e) {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500'];
+            const particleCount = 30;
+            
+            // 클릭 위치 (모바일/PC 대응)
+            const x = e.clientX;
+            const y = e.clientY;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('firework-particle');
+                document.body.appendChild(particle);
+
+                // 랜덤 색상 및 초기 위치
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.backgroundColor = color;
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+
+                // 랜덤 방향으로 퍼지기
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 50 + Math.random() * 100; // 퍼지는 거리
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                // 애니메이션 (Web Animations API)
+                particle.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                    { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 800 + Math.random() * 400,
+                    easing: 'cubic-bezier(0, .9, .57, 1)'
+                }).onfinish = () => particle.remove(); // 끝나면 삭제
+            }
+        }
+
         // ==========================================
         // [1] TTS
         // ==========================================
@@ -215,8 +267,6 @@
             { ch: 4, w: 1.2, isVar: false, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년." },
             { ch: 4, w: 1, isVar: true, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 내 남동생이야. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 내 형(오빠)이야. (응용)" },
-            
-            // 학년 응용문제
             { ch: 4, w: 1, isVar: true, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년. (응용)" },
@@ -346,16 +396,15 @@
                 qKeyCount++;
                 clearTimeout(qKeyTimer);
                 qKeyTimer = setTimeout(() => { qKeyCount = 0; }, 500);
-
                 if (qKeyCount >= 3) {
                     devMode = !devMode;
                     qKeyCount = 0;
                     if (devMode) {
-                        alert("🕵️‍♂️ 개발자 모드: ON");
+                        alert("🕵️‍♂️ 개발자 모드 ON");
                         document.body.classList.add('dev-mode');
                         document.getElementById('mainCard').classList.add('dev-mode-card');
                     } else {
-                        alert("개발자 모드: OFF");
+                        alert("개발자 모드 OFF");
                         document.body.classList.remove('dev-mode');
                         document.getElementById('mainCard').classList.remove('dev-mode-card');
                     }
@@ -529,7 +578,7 @@
                 html += `</div></details>`;
             });
 
-            // [업데이트] 참고 박스에 학년 줄임말 설명 추가
+            // [업데이트] 참고 박스에 'ü 입력법'과 '학년 줄임말' 설명 추가
             html += `
             <div class="ref-box">
                 <h4>💡 중요 체크 포인트 (참고)</h4>
