@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>짱 라오쉬 수행 연습</title>
     <style>
-        /* 깔끔하고 집중 잘 되는 디자인 */
+        /* 기본 디자인 설정 */
         body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background-color: #f7f9fc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         .card { background: white; padding: 40px 30px; border-radius: 20px; box-shadow: 0 12px 24px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 550px; margin-bottom: 20px; }
         h2 { color: #2c3e50; margin: 0 0 10px 0; letter-spacing: -1px; }
@@ -21,21 +21,38 @@
         button:active { transform: scale(0.98); }
         .check-btn { background-color: #28a745; color: white; flex: 2; }
         .skip-btn { background-color: #ecf0f1; color: #444; flex: 1; }
-        .view-btn { background-color: #34495e; color: white; width: 100%; max-width: 550px; padding: 15px; border-radius: 15px; margin-top: 10px; }
         
+        /* 족보 보기 버튼 및 영역 스타일 */
+        .view-btn { background-color: #34495e; color: white; width: 100%; max-width: 550px; padding: 15px; border-radius: 15px; margin-top: 10px; font-size: 1.1em; }
+        
+        #textBody { display: none; width: 95%; max-width: 600px; margin-bottom: 50px; }
+        
+        /* 아코디언(접기/펼치기) 스타일 */
+        details { background: white; margin-bottom: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
+        summary { padding: 15px; font-weight: bold; cursor: pointer; background-color: #fff; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        summary::after { content: '▼'; font-size: 0.8em; color: #999; transition: 0.2s; }
+        details[open] summary::after { transform: rotate(180deg); }
+        details[open] summary { border-bottom: 1px solid #eee; color: #007bff; }
+        
+        /* 내부 콘텐츠 스타일 */
+        .content-box { padding: 15px; text-align: left; font-size: 0.95em; line-height: 1.6; }
+        .dialog-row { margin-bottom: 12px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        .speaker { font-weight: bold; color: #555; margin-right: 5px; }
+        .hanzi { font-size: 1.1em; color: #333; font-weight: bold; }
+        .pinyin { color: #e67e22; font-weight: bold; display: block; }
+        .meaning { color: #666; font-size: 0.9em; }
+        
+        /* 파생 단어(High School 2 등) 묶음 스타일 */
+        details.sub-group { margin-top: 5px; border: 1px solid #eee; background-color: #f9f9f9; box-shadow: none; }
+        details.sub-group summary { padding: 8px 12px; font-size: 0.9em; color: #d35400; background-color: #fff3e0; }
+        details.sub-group summary::after { content: '+ 더보기'; font-size: 0.8em; }
+        details.sub-group[open] summary::after { content: '- 접기'; }
+        .sub-item { padding: 8px 12px; border-top: 1px solid #eee; font-size: 0.9em; color: #555; }
+
         #result { margin-top: 25px; font-weight: 800; font-size: 18px; min-height: 24px; line-height: 1.5; }
         .correct { color: #27ae60; }
         .wrong { color: #e74c3c; }
         .meaning-text { display: block; font-size: 0.9em; color: #555; margin-top: 5px; font-weight: normal; }
-
-        /* 본문 보기 테이블 스타일 */
-        #textBody { display: none; width: 90%; max-width: 550px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 50px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; }
-        th { color: #007bff; }
-        .hanzi-col { font-weight: bold; font-size: 1.1em; color: #333; }
-        .pinyin-col { color: #e67e22; font-weight: bold; }
-        .meaning-col { color: #666; }
     </style>
 </head>
 <body>
@@ -59,84 +76,144 @@
         </div>
     </div>
 
-    <button class="view-btn" onclick="toggleBody()">📖 본문(족보) 보기 / 닫기</button>
+    <button class="view-btn" onclick="toggleBody()">📖 족보(본문) 펼쳐보기</button>
 
     <div id="textBody">
-        <h3 style="margin-top:0; color:#333;">📚 전체 문장 리스트</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>한자</th>
-                    <th>내용</th>
-                </tr>
-            </thead>
-            <tbody id="tableList">
-                </tbody>
-        </table>
-    </div>
+        </div>
 
     <script>
         // ==========================================
-        // [데이터] 뜻(meaning)과 표준병음(realPinyin) 추가
+        // [1] 퀴즈용 데이터 (랜덤 출제용)
         // ==========================================
-        const db = [
-            // [1. 국적] -------------------------------------
-            { w: 1, hanzi: "你是哪国人?", answer: "Ni3 shi4 na3 guo2 re2n?", meaning: "너는 어느 나라 사람이니?", realPinyin: "Nǐ shì nǎ guó rén?" },
-            { w: 1, hanzi: "我是韩国人。", answer: "Wo3 shi4 Ha2nguo2re2n.", meaning: "나는 한국인이야.", realPinyin: "Wǒ shì Hánguórén." },
-            { w: 1, hanzi: "我是中国人。", answer: "Wo3 shi4 Zho1ngguo2re2n.", meaning: "나는 중국인이야.", realPinyin: "Wǒ shì Zhōngguórén." },
-            { w: 1, hanzi: "我是日本人。", answer: "Wo3 shi4 Ri4be3nre2n.", meaning: "나는 일본인이야.", realPinyin: "Wǒ shì Rìběnrén." },
-            { w: 1, hanzi: "我是意大利人。", answer: "Wo3 shi4 Yi4da4li4re2n.", meaning: "나는 이탈리아인이야.", realPinyin: "Wǒ shì Yìdàlìrén." },
+        const quizDb = [
+             // [국적]
+            { w: 1, hanzi: "你是哪国人?", answer: "Ni3 shi4 na3 guo2 re2n?", meaning: "너는 어느 나라 사람이니?" },
+            { w: 1, hanzi: "我是韩国人。", answer: "Wo3 shi4 Ha2nguo2re2n.", meaning: "나는 한국인이야." },
+            { w: 1, hanzi: "我是中国人。", answer: "Wo3 shi4 Zho1ngguo2re2n.", meaning: "나는 중국인이야." },
+            { w: 1, hanzi: "我是日本人。", answer: "Wo3 shi4 Ri4be3nre2n.", meaning: "나는 일본인이야." },
+            { w: 1, hanzi: "我是意大利人。", answer: "Wo3 shi4 Yi4da4li4re2n.", meaning: "나는 이탈리아인이야." },
+            { w: 1, hanzi: "他是美国人吗?", answer: "Ta1 shi4 Me3iguo2re2n ma?", meaning: "그는 미국인이니?" },
+            { w: 1, hanzi: "他是中国人吗?", answer: "Ta1 shi4 Zho1ngguo2re2n ma?", meaning: "그는 중국인이니?" },
+            { w: 1, hanzi: "他是日本人吗?", answer: "Ta1 shi4 Ri4be3nre2n ma?", meaning: "그는 일본인이니?" },
+            { w: 1, hanzi: "不是,他是加拿大人。", answer: "Bu2 shi4, ta1 shi4 Jia1na2da4re2n.", meaning: "아니, 그는 캐나다인이야." },
 
-            { w: 1, hanzi: "他是美国人吗?", answer: "Ta1 shi4 Me3iguo2re2n ma?", meaning: "그는 미국인이니?", realPinyin: "Tā shì Měiguórén ma?" },
-            { w: 1, hanzi: "他是中国人吗?", answer: "Ta1 shi4 Zho1ngguo2re2n ma?", meaning: "그는 중국인이니?", realPinyin: "Tā shì Zhōngguórén ma?" },
-            { w: 1, hanzi: "他是日本人吗?", answer: "Ta1 shi4 Ri4be3nre2n ma?", meaning: "그는 일본인이니?", realPinyin: "Tā shì Rìběnrén ma?" },
-            { w: 1, hanzi: "不是,他是加拿大人。", answer: "Bu2 shi4, ta1 shi4 Jia1na2da4re2n.", meaning: "아니, 그는 캐나다인이야.", realPinyin: "Bú shì, tā shì Jiānádàrén." },
+            // [가족]
+            { w: 1, hanzi: "她是谁?", answer: "Ta1 shi4 she2i?", meaning: "그녀는 누구니?" },
+            { w: 1, hanzi: "她是我妹妹。", answer: "Ta1 shi4 wo3 me4imei.", meaning: "그녀는 내 여동생이야." },
+            { w: 1, hanzi: "她是我姐姐。", answer: "Ta1 shi4 wo3 jie3jie.", meaning: "그녀는 내 누나(언니)야." },
+            { w: 1, hanzi: "她是我妈妈。", answer: "Ta1 shi4 wo3 ma1ma.", meaning: "그녀는 우리 엄마야." },
+            { w: 1, hanzi: "他是谁?", answer: "Ta1 shi4 she2i?", meaning: "그는 누구니?" },
+            { w: 1, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 내 남동생이야." },
+            { w: 1, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 내 형(오빠)이야." },
+            { w: 1, hanzi: "他是我爸爸。", answer: "Ta1 shi4 wo3 ba4ba.", meaning: "그는 우리 아빠야." },
+            { w: 1, hanzi: "你有哥哥吗?", answer: "Ni3 yo3u ge1ge ma?", meaning: "너 형(오빠) 있니?" },
+            { w: 1, hanzi: "有,这是我哥哥。", answer: "Yo3u, zhe4 shi4 wo3 ge1ge.", meaning: "있어, 이 사람은 우리 형(오빠)이야." },
 
-            // [2. 가족] -------------------------------------
-            { w: 1, hanzi: "她是谁?", answer: "Ta1 shi4 she2i?", meaning: "그녀는 누구니?", realPinyin: "Tā shì shéi?" },
-            { w: 1, hanzi: "她是我妹妹。", answer: "Ta1 shi4 wo3 me4imei.", meaning: "그녀는 내 여동생이야.", realPinyin: "Tā shì wǒ mèimei." },
-            { w: 1, hanzi: "她是我姐姐。", answer: "Ta1 shi4 wo3 jie3jie.", meaning: "그녀는 내 누나(언니)야.", realPinyin: "Tā shì wǒ jiějie." },
-            { w: 1, hanzi: "她是我妈妈。", answer: "Ta1 shi4 wo3 ma1ma.", meaning: "그녀는 우리 엄마야.", realPinyin: "Tā shì wǒ māma." },
-            
-            { w: 1, hanzi: "他是谁?", answer: "Ta1 shi4 she2i?", meaning: "그는 누구니?", realPinyin: "Tā shì shéi?" },
-            { w: 1, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 내 남동생이야.", realPinyin: "Tā shì wǒ dìdi." },
-            { w: 1, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 내 형(오빠)이야.", realPinyin: "Tā shì wǒ gēge." },
-            { w: 1, hanzi: "他是我爸爸。", answer: "Ta1 shi4 wo3 ba4ba.", meaning: "그는 우리 아빠야.", realPinyin: "Tā shì wǒ bàba." },
+            // [학년]
+            { w: 1, hanzi: "他上几年级?", answer: "Ta1 sha4ng ji3 nia2nji2?", meaning: "그는 몇 학년이니?" },
+            { w: 1, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년이야." },
+            { w: 1, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년이야." },
+            { w: 1, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년이야." },
+            { w: 1, hanzi: "初中三年级。", answer: "Chu1zho1ng sa1n nia2nji2.", meaning: "중학교 3학년이야." },
+            { w: 1, hanzi: "高中一年级。", answer: "Ga1ozho1ng yi1 nia2nji2.", meaning: "고등학교 1학년이야." },
+            { w: 1.2, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년이야." },
 
-            { w: 1, hanzi: "你有哥哥吗?", answer: "Ni3 yo3u ge1ge ma?", meaning: "너 형(오빠) 있니?", realPinyin: "Nǐ yǒu gēge ma?" },
-            { w: 1, hanzi: "有,这是我哥哥。", answer: "Yo3u, zhe4 shi4 wo3 ge1ge.", meaning: "있어, 이 사람은 우리 형(오빠)이야.", realPinyin: "Yǒu, zhè shì wǒ gēge." },
+            // [기타]
+            { w: 1, hanzi: "你叫什么名字?", answer: "Ni3 jia4o she2nme mi2ngzi?", meaning: "네 이름은 뭐니?" },
+            { w: 1, hanzi: "我叫金东民。", answer: "Wo3 jia4o Ji1n Do1ngmi2n.", meaning: "나는 김동민이라고 해." },
+            { w: 1, hanzi: "他很帅!", answer: "Ta1 he3n shua4i!", meaning: "그는 잘 생겼어!" },
+            { w: 1, hanzi: "他是我的朋友。", answer: "Ta1 shi4 wo3 de pe2ngyou.", meaning: "그는 내 친구야." },
+            { w: 1, hanzi: "她很像你!", answer: "Ta1 he3n xia4ng ni3!", meaning: "그녀는 너를 많이 닮았어!" },
+            { w: 1, hanzi: "她几岁?", answer: "Ta1 ji3 sui4?", meaning: "그녀는 몇 살이니?" },
+            { w: 1, hanzi: "今年八岁。", answer: "Ji1nnia2n ba1 sui4.", meaning: "올해 8살이야." }
+        ];
 
-            // [3. 학년] -------------------------------------
-            { w: 1, hanzi: "他上几年级?", answer: "Ta1 sha4ng ji3 nia2nji2?", meaning: "그는 몇 학년이니?", realPinyin: "Tā shàng jǐ niánjí?" },
-            
-            { w: 1, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년이야.", realPinyin: "Xiǎoxué liù niánjí." }, 
-            { w: 1, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년이야.", realPinyin: "Chūzhōng yī niánjí." },
-            { w: 1, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년이야.", realPinyin: "Chūzhōng èr niánjí." },
-            { w: 1, hanzi: "初中三年级。", answer: "Chu1zho1ng sa1n nia2nji2.", meaning: "중학교 3학년이야.", realPinyin: "Chūzhōng sān niánjí." },
-            { w: 1, hanzi: "高中一年级。", answer: "Ga1ozho1ng yi1 nia2nji2.", meaning: "고등학교 1학년이야.", realPinyin: "Gāozhōng yī niánjí." },
-
-            // ★ [핵심] 고등학교 2학년 (가중치 1.2배) ★
-            { w: 1.2, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년이야.", realPinyin: "Gāozhōng èr niánjí." }, 
-
-            // [4. 기타] -------------------------------------
-            { w: 1, hanzi: "你叫什么名字?", answer: "Ni3 jia4o she2nme mi2ngzi?", meaning: "네 이름은 뭐니?", realPinyin: "Nǐ jiào shénme míngzi?" },
-            { w: 1, hanzi: "我叫金东民。", answer: "Wo3 jia4o Ji1n Do1ngmi2n.", meaning: "나는 김동민이라고 해.", realPinyin: "Wǒ jiào Jīn Dōngmín." },
-            { w: 1, hanzi: "他很帅!", answer: "Ta1 he3n shua4i!", meaning: "그는 잘 생겼어!", realPinyin: "Tā hěn shuài!" },
-            { w: 1, hanzi: "他是我的朋友。", answer: "Ta1 shi4 wo3 de pe2ngyou.", meaning: "그는 내 친구야.", realPinyin: "Tā shì wǒ de péngyou." },
-            { w: 1, hanzi: "她很像你!", answer: "Ta1 he3n xia4ng ni3!", meaning: "그녀는 너를 많이 닮았어!", realPinyin: "Tā hěn xiàng nǐ!" },
-            { w: 1, hanzi: "她几岁?", answer: "Ta1 ji3 sui4?", meaning: "그녀는 몇 살이니?", realPinyin: "Tā jǐ suì?" },
-            { w: 1, hanzi: "今年八岁。", answer: "Ji1nnia2n ba1 sui4.", meaning: "올해 8살이야.", realPinyin: "Jīnnián bā suì." }
+        // ==========================================
+        // [2] 족보용 데이터 (구조화된 보기용)
+        // ==========================================
+        const studyContents = [
+            {
+                title: "본문 1 (이름/국적)",
+                lines: [
+                    { h: "你叫什么名字?", p: "Nǐ jiào shénme míngzi?", m: "이름이 뭐니?" },
+                    { h: "我叫金东民。", p: "Wǒ jiào Jīn Dōngmín.", m: "난 김동민이야." },
+                    { h: "你是哪国人?", p: "Nǐ shì nǎ guó rén?", m: "어느 나라 사람이니?" },
+                    { 
+                        h: "我是韩国人。", p: "Wǒ shì Hánguórén.", m: "난 한국인이야. (기본)",
+                        subs: [
+                            { h: "我是中国人 (Wǒ shì Zhōngguórén)", m: "중국인이야" },
+                            { h: "我是日本人 (Wǒ shì Rìběnrén)", m: "일본인이야" },
+                            { h: "我是意大利人 (Wǒ shì Yìdàlìrén)", m: "이탈리아인이야" }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "본문 2 (친구 소개)",
+                lines: [
+                    { h: "他很帅!", p: "Tā hěn shuài!", m: "그는 잘생겼어!" },
+                    { h: "他是我的朋友。", p: "Tā shì wǒ de péngyou.", m: "그는 내 친구야." },
+                    { 
+                        h: "他是美国人吗?", p: "Tā shì Měiguórén ma?", m: "그는 미국인이니?",
+                        subs: [
+                             { h: "他是中国人吗?", m: "그는 중국인이니?" },
+                             { h: "他是日本人吗?", m: "그는 일본인이니?" }
+                        ]
+                    },
+                    { h: "不是,他是加拿大人。", p: "Bú shì, tā shì Jiānádàrén.", m: "아니, 캐나다인이야." }
+                ]
+            },
+            {
+                title: "본문 3 (가족/나이)",
+                lines: [
+                    { 
+                        h: "她是谁?", p: "Tā shì shéi?", m: "그녀는 누구니?",
+                        subs: [ { h: "他是谁? (He)", m: "그는 누구니?" } ]
+                    },
+                    { 
+                        h: "她是我妹妹。", p: "Tā shì wǒ mèimei.", m: "내 여동생이야.",
+                        subs: [
+                            { h: "姐姐 (jiějie)", m: "누나/언니" },
+                            { h: "妈妈 (māma)", m: "엄마" },
+                            { h: "哥哥 (gēge)", m: "형/오빠" },
+                            { h: "弟弟 (dìdi)", m: "남동생" },
+                            { h: "爸爸 (bàba)", m: "아빠" }
+                        ]
+                    },
+                    { h: "她很像你!", p: "Tā hěn xiàng nǐ!", m: "너랑 많이 닮았다!" },
+                    { h: "她几岁?", p: "Tā jǐ suì?", m: "몇 살이니?" },
+                    { h: "今年八岁。", p: "Jīnnián bā suì.", m: "올해 8살이야." }
+                ]
+            },
+            {
+                title: "본문 4 (형제/학년)",
+                lines: [
+                    { h: "你有哥哥吗?", p: "Nǐ yǒu gēge ma?", m: "형(오빠) 있니?" },
+                    { h: "有,这是我哥哥。", p: "Yǒu, zhè shì wǒ gēge.", m: "있어, 이쪽은 우리 형이야." },
+                    { h: "他上几年级?", p: "Tā shàng jǐ niánjí?", m: "몇 학년이니?" },
+                    { 
+                        h: "高中二年级。", p: "Gāozhōng èr niánjí.", m: "고등학교 2학년이야. (★빈출)",
+                        subs: [
+                            { h: "小学六年级 (Xiǎoxué liù niánjí)", m: "초등학교 6학년" },
+                            { h: "初中一年级 (Chūzhōng yī niánjí)", m: "중학교 1학년" },
+                            { h: "初中二年级 (Chūzhōng èr niánjí)", m: "중학교 2학년" },
+                            { h: "初中三年级 (Chūzhōng sān niánjí)", m: "중학교 3학년" },
+                            { h: "高中一年级 (Gāozhōng yī niánjí)", m: "고등학교 1학년" }
+                        ]
+                    }
+                ]
+            }
         ];
 
         let currentIdx = 0;
 
-        // 가중치 랜덤 선택
+        // 퀴즈용 랜덤 함수
         function getWeightedRandomIndex() {
             let totalWeight = 0;
-            for (let i = 0; i < db.length; i++) totalWeight += db[i].w;
+            for (let i = 0; i < quizDb.length; i++) totalWeight += quizDb[i].w;
             let randomNum = Math.random() * totalWeight;
-            for (let i = 0; i < db.length; i++) {
-                randomNum -= db[i].w;
+            for (let i = 0; i < quizDb.length; i++) {
+                randomNum -= quizDb[i].w;
                 if (randomNum <= 0) return i;
             }
             return 0;
@@ -144,7 +221,7 @@
 
         function nextProblem() {
             currentIdx = getWeightedRandomIndex();
-            document.getElementById('question').innerText = db[currentIdx].hanzi;
+            document.getElementById('question').innerText = quizDb[currentIdx].hanzi;
             document.getElementById('answerInput').value = '';
             document.getElementById('result').innerText = '';
             document.getElementById('answerInput').focus();
@@ -152,50 +229,61 @@
 
         function checkAnswer() {
             const userAns = document.getElementById('answerInput').value.trim();
-            const correctAns = db[currentIdx].answer;
-            const meaning = db[currentIdx].meaning; // 뜻 가져오기
+            const correctAns = quizDb[currentIdx].answer;
+            const meaning = quizDb[currentIdx].meaning;
 
-            // 대소문자/공백 처리
             const cleanUser = userAns.toLowerCase().replace(/\s+/g, ' ');
             const cleanCorrect = correctAns.toLowerCase().replace(/\s+/g, ' ');
-
             const resDiv = document.getElementById('result');
 
             if (cleanUser === cleanCorrect) {
-                // 정답 시에도 뜻 보여주기
                 resDiv.innerHTML = `<span class='correct'>정답입니다! 🎉</span><br><span class='meaning-text'>(${meaning})</span>`;
-                setTimeout(nextProblem, 2000); // 뜻 읽을 시간 2초 줌
+                setTimeout(nextProblem, 2000);
             } else {
-                // 오답 시 정답과 뜻 보여주기
                 resDiv.innerHTML = `<span class='wrong'>오답! 정답: ${correctAns}</span><br><span class='meaning-text'>(${meaning})</span>`;
             }
         }
 
-        // 엔터키 지원
-        document.getElementById("answerInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") checkAnswer();
-        });
+        document.getElementById("answerInput").addEventListener("keypress", function(e) { if (e.key === "Enter") checkAnswer(); });
 
-        // 본문 보기 토글 기능
+        // [족보 렌더링 함수] - 여기가 핵심! 구조화된 데이터 표시
+        function renderStudyBody() {
+            const container = document.getElementById('textBody');
+            let html = '<h3 style="margin-top:0; color:#333; border-bottom:2px solid #333; padding-bottom:10px;">📚 수행평가 족보</h3>';
+
+            studyContents.forEach(section => {
+                // 본문 1, 2, 3, 4 대분류 (Details)
+                html += `<details open>
+                    <summary>${section.title}</summary>
+                    <div class="content-box">`;
+                
+                section.lines.forEach(line => {
+                    html += `<div class="dialog-row">
+                        <div class="hanzi">${line.h}</div>
+                        <div class="pinyin">${line.p}</div>
+                        <div class="meaning">${line.m}</div>`;
+                    
+                    // 파생 단어(Variations)가 있으면 소분류 Details 추가
+                    if (line.subs) {
+                        html += `<details class="sub-group"><summary>${line.h.split('。')[0]} (다른 표현 보기)</summary>`;
+                        line.subs.forEach(sub => {
+                            html += `<div class="sub-item"><b>${sub.h}</b> : ${sub.m}</div>`;
+                        });
+                        html += `</details>`;
+                    }
+                    html += `</div>`;
+                });
+
+                html += `</div></details>`;
+            });
+            container.innerHTML = html;
+        }
+
         function toggleBody() {
             const el = document.getElementById('textBody');
-            const tbody = document.getElementById('tableList');
-            
             if (el.style.display === 'none' || el.style.display === '') {
-                // 열릴 때 내용 채우기 (최초 1회만 하면 좋지만 매번 갱신도 OK)
-                let html = '';
-                db.forEach(item => {
-                    html += `<tr>
-                        <td class="hanzi-col">${item.hanzi}</td>
-                        <td>
-                            <div class="pinyin-col">${item.realPinyin}</div>
-                            <div class="meaning-col">${item.meaning}</div>
-                        </td>
-                    </tr>`;
-                });
-                tbody.innerHTML = html;
+                renderStudyBody(); // 열 때 렌더링
                 el.style.display = 'block';
-                // 화면 스크롤 내려서 보여주기
                 el.scrollIntoView({ behavior: 'smooth' });
             } else {
                 el.style.display = 'none';
