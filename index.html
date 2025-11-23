@@ -34,12 +34,11 @@
         details { background: white; margin-bottom: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
         summary { padding: 15px; font-weight: bold; cursor: pointer; background-color: #fff; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         
-        /* [버그 수정] 화살표 회전 로직 개선 */
-        /* 1. 메인 메뉴 화살표 */
+        /* 화살표 회전 로직 */
         summary::after { content: '▼'; font-size: 0.8em; color: #999; transition: 0.2s; }
         details[open] > summary::after { transform: rotate(180deg); }
 
-        /* 2. 서브 메뉴(더보기)는 회전 금지 */
+        /* 서브 메뉴(더보기)는 회전 금지 */
         details.sub-group summary { padding: 8px 12px; font-size: 0.9em; color: #d35400; background-color: #fff3e0; }
         details.sub-group summary::after { content: '+ 더보기'; transform: none !important; } 
         details.sub-group[open] > summary::after { content: '- 접기'; transform: none !important; }
@@ -51,6 +50,14 @@
         .pinyin { color: #e67e22; font-weight: bold; display: block; }
         .meaning { color: #666; font-size: 0.9em; }
         .sub-item { padding: 8px 12px; border-top: 1px solid #eee; font-size: 0.9em; color: #555; }
+
+        /* [NEW] 참고 박스 스타일 */
+        .ref-box { background-color: #fff3e0; border: 2px solid #ffe0b2; border-radius: 15px; padding: 20px; margin-top: 20px; text-align: left; }
+        .ref-box h4 { margin: 0 0 10px 0; color: #e65100; font-size: 1.1em; border-bottom: 1px dashed #e65100; padding-bottom: 5px; }
+        .ref-list { list-style: none; padding: 0; margin: 0; font-size: 0.95em; color: #5d4037; }
+        .ref-list li { margin-bottom: 8px; padding-left: 20px; position: relative; }
+        .ref-list li::before { content: '👉'; position: absolute; left: 0; }
+        .highlight-code { background-color: rgba(255,255,255,0.6); padding: 2px 5px; border-radius: 4px; font-weight: bold; color: #d84315; font-family: monospace; }
 
         /* 결과 표시 */
         #result { margin-top: 25px; font-weight: 800; font-size: 18px; min-height: 24px; line-height: 1.5; }
@@ -89,17 +96,17 @@
         </div>
     </div>
 
-    <button class="view-btn" onclick="toggleBody()">📖 본문 보기</button>
+    <button class="view-btn" onclick="toggleBody()">📖 본문 보기 (참고 포함)</button>
 
     <div id="textBody">
         </div>
 
     <script>
         // ==========================================
-        // [1] 문제 데이터 (ch: 단원 번호 추가됨)
+        // [1] 문제 데이터 (변화 없음)
         // ==========================================
         const quizDb = [
-            // --- [본문 1] 이름, 국적 (Page 4 내용) ---
+            // --- [본문 1] ---
             { ch: 1, w: 1, hanzi: "你叫什么名字?", answer: "Ni3 jia4o she2nme mi2ngzi?", meaning: "이름이 뭐니?" },
             { ch: 1, w: 1, hanzi: "我叫金东民。", answer: "Wo3 jia4o Ji1n Do1ngmi2n.", meaning: "난 김동민이야." },
             { ch: 1, w: 1, hanzi: "你是哪国人?", answer: "Ni3 shi4 na3 guo2 re2n?", meaning: "어느 나라 사람이니?" },
@@ -108,7 +115,7 @@
             { ch: 1, w: 1, hanzi: "我是日本人。", answer: "Wo3 shi4 Ri4be3nre2n.", meaning: "난 일본인이야." },
             { ch: 1, w: 1, hanzi: "我是意大利人。", answer: "Wo3 shi4 Yi4da4li4re2n.", meaning: "난 이탈리아인이야." },
 
-            // --- [본문 2] 친구 소개, 제3자 국적 (Page 3 내용) ---
+            // --- [본문 2] ---
             { ch: 2, w: 1, hanzi: "他很帅!", answer: "Ta1 he3n shua4i!", meaning: "그는 잘생겼어!" },
             { ch: 2, w: 1, hanzi: "他是我的朋友。", answer: "Ta1 shi4 wo3 de pe2ngyou.", meaning: "그는 내 친구야." },
             { ch: 2, w: 1, hanzi: "他是美国人吗?", answer: "Ta1 shi4 Me3iguo2re2n ma?", meaning: "그는 미국인이니?" },
@@ -116,17 +123,17 @@
             { ch: 2, w: 1, hanzi: "他是日本人吗?", answer: "Ta1 shi4 Ri4be3nre2n ma?", meaning: "그는 일본인이니?" },
             { ch: 2, w: 1, hanzi: "不是,他是加拿大人。", answer: "Bu2 shi4, ta1 shi4 Jia1na2da4re2n.", meaning: "아니, 그는 캐나다인이야." },
 
-            // --- [본문 3] 그녀(She), 가족, 나이 (Page 2 내용) ---
+            // --- [본문 3] ---
             { ch: 3, w: 1, hanzi: "她是谁?", answer: "Ta1 shi4 she2i?", meaning: "그녀는 누구니?" },
             { ch: 3, w: 1, hanzi: "她是我妹妹。", answer: "Ta1 shi4 wo3 me4imei.", meaning: "그녀는 내 여동생이야." },
             { ch: 3, w: 1, hanzi: "她是我姐姐。", answer: "Ta1 shi4 wo3 jie3jie.", meaning: "그녀는 내 누나(언니)야." },
             { ch: 3, w: 1, hanzi: "她是我妈妈。", answer: "Ta1 shi4 wo3 ma1ma.", meaning: "그녀는 우리 엄마야." },
-            { ch: 3, w: 1, hanzi: "他是谁?", answer: "Ta1 shi4 she2i?", meaning: "그는 누구니?" }, // 문맥상 3과에도 어울림
+            { ch: 3, w: 1, hanzi: "他是谁?", answer: "Ta1 shi4 she2i?", meaning: "그는 누구니?" },
             { ch: 3, w: 1, hanzi: "她很像你!", answer: "Ta1 he3n xia4ng ni3!", meaning: "그녀는 널 많이 닮았어!" },
             { ch: 3, w: 1, hanzi: "她几岁?", answer: "Ta1 ji3 sui4?", meaning: "그녀는 몇 살이니?" },
             { ch: 3, w: 1, hanzi: "今年八岁。", answer: "Ji1nnia2n ba1 sui4.", meaning: "올해 8살이야." },
 
-            // --- [본문 4] 형제 유무, 학년 (Page 1 내용) ---
+            // --- [본문 4] ---
             { ch: 4, w: 1, hanzi: "你有哥哥吗?", answer: "Ni3 yo3u ge1ge ma?", meaning: "너 형(오빠) 있니?" },
             { ch: 4, w: 1, hanzi: "有,这是我哥哥。", answer: "Yo3u, zhe4 shi4 wo3 ge1ge.", meaning: "있어, 이 사람은 우리 형(오빠)이야." },
             { ch: 4, w: 1, hanzi: "他上几年级?", answer: "Ta1 sha4ng ji3 nia2nji2?", meaning: "그는 몇 학년이니?" },
@@ -136,14 +143,13 @@
             { ch: 4, w: 1, hanzi: "初中三年级。", answer: "Chu1zho1ng sa1n nia2nji2.", meaning: "중학교 3학년." },
             { ch: 4, w: 1, hanzi: "高中一年级。", answer: "Ga1ozho1ng yi1 nia2nji2.", meaning: "고등학교 1학년." },
             { ch: 4, w: 1.2, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년 (빈출)" },
-            // 가족 변형 문제도 4과에 배치 (문맥상)
             { ch: 4, w: 1, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 내 남동생이야." },
             { ch: 4, w: 1, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 내 형(오빠)이야." },
             { ch: 4, w: 1, hanzi: "他是我爸爸。", answer: "Ta1 shi4 wo3 ba4ba.", meaning: "그는 우리 아빠야." }
         ];
 
         // ==========================================
-        // [2] 족보 데이터
+        // [2] 족보 데이터 (확장됨)
         // ==========================================
         const studyContents = [
             {
@@ -153,11 +159,11 @@
                     { h: "我叫金东民。", p: "Wǒ jiào Jīn Dōngmín.", m: "난 김동민이야." },
                     { h: "你是哪国人?", p: "Nǐ shì nǎ guó rén?", m: "어느 나라 사람이니?" },
                     { 
-                        h: "我是韩国人。", p: "Wǒ shì Hánguórén.", m: "난 한국인이야. (기본)",
+                        h: "我是韩国人。", p: "Wǒ shì Hánguórén.", m: "난 한국인이야.",
                         subs: [
-                            { h: "我是中国人 (Wǒ shì Zhōngguórén)", m: "중국인이야" },
-                            { h: "我是日本人 (Wǒ shì Rìběnrén)", m: "일본인이야" },
-                            { h: "我是意大利人 (Wǒ shì Yìdàlìrén)", m: "이탈리아인이야" }
+                            { h: "我是中国人", m: "중국인이야" },
+                            { h: "我是日本人", m: "일본인이야" },
+                            { h: "我是意大利人", m: "이탈리아인이야" }
                         ]
                     }
                 ]
@@ -196,17 +202,39 @@
                     },
                     { h: "她很像你!", p: "Tā hěn xiàng nǐ!", m: "너랑 많이 닮았다!" },
                     { h: "她几岁?", p: "Tā jǐ suì?", m: "몇 살이니?" },
-                    { h: "今年八岁。", p: "Jīnnián bā suì.", m: "올해 8살이야." }
+                    { 
+                        h: "今年八岁。", p: "Jīnnián bā suì.", m: "올해 8살이야.",
+                        subs: [
+                            { h: "九岁 (jiǔ suì)", m: "9살" },
+                            { h: "十岁 (shí suì)", m: "10살" },
+                            { h: "十一岁 (shíyī suì)", m: "11살" },
+                            { h: "十二岁 (shíèr suì)", m: "12살" },
+                            { h: "十三岁 (shísān suì)", m: "13살" },
+                            { h: "十四岁 (shísì suì)", m: "14살" },
+                            { h: "十五岁 (shíwǔ suì)", m: "15살" },
+                            { h: "十六岁 (shíliù suì)", m: "16살" },
+                            { h: "十七岁 (shíqī suì)", m: "17살" },
+                            { h: "十八岁 (shíbā suì)", m: "18살" }
+                        ]
+                    }
                 ]
             },
             {
                 title: "4️⃣ 본문 4 (형제/학년)",
                 lines: [
                     { h: "你有哥哥吗?", p: "Nǐ yǒu gēge ma?", m: "형(오빠) 있니?" },
-                    { h: "有,这是我哥哥。", p: "Yǒu, zhè shì wǒ gēge.", m: "있어, 이쪽은 우리 형이야." },
+                    { 
+                        h: "有,这是我哥哥。", p: "Yǒu, zhè shì wǒ gēge.", m: "있어, 이쪽은 우리 형이야.",
+                        subs: [
+                            { h: "有, 这是我弟弟 (dìdi)", m: "있어, 내 남동생이야" },
+                            { h: "有, 这是我姐姐 (jie3jie)", m: "있어, 내 누나야" },
+                            { h: "有, 这是我爸爸 (ba4ba)", m: "있어, 우리 아빠야" },
+                            { h: "有, 这是我妈妈 (ma1ma)", m: "있어, 우리 엄마야" }
+                        ]
+                    },
                     { h: "他上几年级?", p: "Tā shàng jǐ niánjí?", m: "몇 학년이니?" },
                     { 
-                        h: "高中二年级。", p: "Gāozhōng èr niánjí.", m: "고등학교 2학년이야. (★빈출)",
+                        h: "高中二年级。", p: "Gāozhōng èr niánjí.", m: "고등학교 2학년이야.",
                         subs: [
                             { h: "小学六年级 (Xiǎoxué liù niánjí)", m: "초등학교 6학년" },
                             { h: "初中一年级 (Chūzhōng yī niánjí)", m: "중학교 1학년" },
@@ -220,26 +248,21 @@
         ];
 
         let currentIdx = 0;
-        let currentPool = []; // 현재 선택된 문제 묶음
+        let currentPool = [];
 
-        // [필터링 함수] 선택된 모드에 따라 문제 풀 업데이트
         function updatePool() {
             const mode = document.getElementById('chapterSelect').value;
             if (mode == "0") {
-                currentPool = quizDb; // 전체 모드
+                currentPool = quizDb;
             } else {
-                // 해당 단원(ch)만 필터링
                 currentPool = quizDb.filter(item => item.ch == mode);
             }
         }
 
-        // 가중치 랜덤 (현재 풀 기준)
         function getWeightedRandomIndex() {
             if (currentPool.length === 0) return 0;
-            
             let totalWeight = 0;
             for (let i = 0; i < currentPool.length; i++) totalWeight += currentPool[i].w;
-            
             let randomNum = Math.random() * totalWeight;
             for (let i = 0; i < currentPool.length; i++) {
                 randomNum -= currentPool[i].w;
@@ -249,9 +272,8 @@
         }
 
         function nextProblem() {
-            updatePool(); // 모드 확인
+            updatePool();
             currentIdx = getWeightedRandomIndex();
-            
             const q = currentPool[currentIdx];
             document.getElementById('question').innerText = q.hanzi;
             document.getElementById('answerInput').value = '';
@@ -278,7 +300,7 @@
 
         document.getElementById("answerInput").addEventListener("keypress", function(e) { if (e.key === "Enter") checkAnswer(); });
 
-        // [족보 렌더링]
+        // [족보 렌더링 + 참고 박스 추가]
         function renderStudyBody() {
             const container = document.getElementById('textBody');
             let html = '<h3 style="margin-top:0; color:#333; border-bottom:2px solid #333; padding-bottom:10px;">📚 수행평가 족보</h3>';
@@ -295,7 +317,7 @@
                         <div class="meaning">${line.m}</div>`;
                     
                     if (line.subs) {
-                        html += `<details class="sub-group"><summary>${line.h.split('。')[0]} (다른 표현)</summary>`;
+                        html += `<details class="sub-group"><summary>${line.h.split('。')[0]} (응용 표현)</summary>`;
                         line.subs.forEach(sub => {
                             html += `<div class="sub-item"><b>${sub.h}</b> : ${sub.m}</div>`;
                         });
@@ -303,9 +325,21 @@
                     }
                     html += `</div>`;
                 });
-
                 html += `</div></details>`;
             });
+
+            // [NEW] 참고 박스 추가 (요청하신 내용 반영)
+            html += `
+            <div class="ref-box">
+                <h4>💡 중요 체크 포인트 (참고)</h4>
+                <ul class="ref-list">
+                    <li><span class="highlight-code">Tā hěn shuài!</span><br>여기서 <b>hěn</b>은 해석하지 않습니다. (문법적 요소)</li>
+                    <li><span class="highlight-code">Jīnnián bā suì.</span><br>문장 끝의 <b>suì(살)</b>는 생략 가능합니다. (예: Jīnnián bā.)</li>
+                    <li><span class="highlight-code">Tā shàng jǐ niánjí?</span><br>동사 <b>shàng(다니다)</b>은 생략 가능합니다.</li>
+                </ul>
+            </div>
+            `;
+
             container.innerHTML = html;
         }
 
@@ -320,7 +354,6 @@
             }
         }
 
-        // 초기 실행
         nextProblem();
     </script>
 </body>
