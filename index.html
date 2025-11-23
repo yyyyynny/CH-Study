@@ -11,13 +11,15 @@
         h2 { color: #2c3e50; margin: 0 0 10px 0; letter-spacing: -1px; }
         .subtitle { color: #7f8c8d; font-size: 0.95em; margin-bottom: 10px; line-height: 1.6; padding-bottom: 15px; }
         
-        /* [기능] 모드 선택 및 카운터 영역 */
+        /* [기능] 컨트롤 패널 */
         .control-panel { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
         .mode-select-area { margin-bottom: 15px; }
         select { padding: 8px; font-size: 15px; border-radius: 8px; border: 2px solid #007bff; color: #333; font-weight: bold; cursor: pointer; outline: none; width: 100%; max-width: 300px; }
 
-        /* 카운터 배지 스타일 */
-        .counter-badge { display: inline-block; background-color: #e3f2fd; color: #1565c0; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9em; border: 1px solid #bbdefb; }
+        /* 배지 스타일 */
+        .badge-container { display: flex; justify-content: center; gap: 10px; font-size: 0.9em; font-weight: bold; }
+        .counter-badge { background-color: #e3f2fd; color: #1565c0; padding: 5px 15px; border-radius: 20px; border: 1px solid #bbdefb; }
+        .wrong-badge { background-color: #ffebee; color: #c62828; padding: 5px 15px; border-radius: 20px; border: 1px solid #ffcdd2; }
 
         #question { font-size: 38px; font-weight: 800; color: #007bff; margin: 20px 0; min-height: 60px; word-break: keep-all; display: flex; align-items: center; justify-content: center; }
         
@@ -29,20 +31,17 @@
         button:active { transform: scale(0.98); }
         .check-btn { background-color: #28a745; color: white; flex: 2; }
         .skip-btn { background-color: #ecf0f1; color: #444; flex: 1; }
+        .retry-btn { background-color: #d32f2f; color: white; width: 100%; margin-top: 10px; display: none; } /* 오답 풀기 버튼 */
         
-        /* [본문 보기] 버튼 및 영역 */
+        /* [본문 보기] */
         .view-btn { background-color: #34495e; color: white; width: 100%; max-width: 550px; padding: 15px; border-radius: 15px; margin-top: 10px; font-size: 1.1em; border: none; cursor: pointer; }
         #textBody { display: none; width: 95%; max-width: 600px; margin-bottom: 50px; }
         
-        /* [아코디언] 디자인 */
+        /* 아코디언 스타일 */
         details { background: white; margin-bottom: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
         summary { padding: 15px; font-weight: bold; cursor: pointer; background-color: #fff; list-style: none; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* 화살표 회전 로직 */
         summary::after { content: '▼'; font-size: 0.8em; color: #999; transition: 0.2s; }
         details[open] > summary::after { transform: rotate(180deg); }
-
-        /* 서브 메뉴(더보기)는 회전 금지 */
         details.sub-group summary { padding: 8px 12px; font-size: 0.9em; color: #d35400; background-color: #fff3e0; }
         details.sub-group summary::after { content: '+ 더보기'; transform: none !important; } 
         details.sub-group[open] > summary::after { content: '- 접기'; transform: none !important; }
@@ -71,7 +70,7 @@
 <body>
 
     <div class="card">
-        <h2>🇨🇳 짱 라오쉬 수행 연습</h2>
+        <h2 id="mainTitle">🇨🇳 짱 라오쉬 수행 연습</h2>
         <div class="subtitle">
             성조 번호 위치 주의! (예: shua4i, liu4)<br>
         </div>
@@ -86,7 +85,11 @@
                     <option value="4">4️⃣ 본문 4 (형제/학년)</option>
                 </select>
             </div>
-            <div class="counter-badge" id="counterDisplay">진행: 0번째</div>
+            <div class="badge-container">
+                <div class="counter-badge" id="counterDisplay">진행: 0</div>
+                <div class="wrong-badge" id="wrongDisplay">틀림: 0</div>
+            </div>
+            <button class="retry-btn" id="retryBtn" onclick="startRetryMode()">🔥 틀린 문제 다시 풀기 (Click)</button>
         </div>
         
         <div id="question">Loading...</div>
@@ -107,33 +110,28 @@
 
     <script>
         // ==========================================
-        // [1] 문제 데이터 (Quiz DB)
+        // [1] 문제 데이터 (Quiz DB) - 요청사항 반영됨
         // ==========================================
         const quizDb = [
             // --- [본문 1] ---
-            // ★ 기본 문제 1.5배 확률 적용
             { ch: 1, w: 1.5, hanzi: "你叫什么名字?", answer: "Ni3 jia4o she2nme mi2ngzi?", meaning: "이름이 뭐니?" },
             { ch: 1, w: 1, hanzi: "我叫金东民。", answer: "Wo3 jia4o Ji1n Do1ngmi2n.", meaning: "난 김동민이야." },
-            // ★ 기본 문제 1.5배 확률 적용
             { ch: 1, w: 1.5, hanzi: "你是哪国人?", answer: "Ni3 shi4 na3 guo2 re2n?", meaning: "어느 나라 사람이니?" },
             { ch: 1, w: 1, hanzi: "我是韩国人。", answer: "Wo3 shi4 Ha2nguo2re2n.", meaning: "난 한국인이야." },
             { ch: 1, w: 1, hanzi: "我是中国人。", answer: "Wo3 shi4 Zho1ngguo2re2n.", meaning: "난 중국인이야." },
-            { ch: 1, w: 1, hanzi: "我是日本人。", answer: "Wo3 shi4 Ri4be3nre2n.", meaning: "난 일본인이야." },
-            { ch: 1, w: 1, hanzi: "我是意大利人。", answer: "Wo3 shi4 Yi4da4li4re2n.", meaning: "난 이탈리아인이야." },
+            // 일본, 이탈리아 삭제됨
 
             // --- [본문 2] ---
             { ch: 2, w: 1, hanzi: "他很帅!", answer: "Ta1 he3n shua4i!", meaning: "그는 잘생겼어!" },
             { ch: 2, w: 1, hanzi: "他是我的朋友。", answer: "Ta1 shi4 wo3 de pe2ngyou.", meaning: "그는 내 친구야." },
             { ch: 2, w: 1, hanzi: "他是美国人吗?", answer: "Ta1 shi4 Me3iguo2re2n ma?", meaning: "그는 미국인이니?" },
-            { ch: 2, w: 1, hanzi: "他是中国人吗?", answer: "Ta1 shi4 Zho1ngguo2re2n ma?", meaning: "그는 중국인이니?" },
-            { ch: 2, w: 1, hanzi: "他是日本人吗?", answer: "Ta1 shi4 Ri4be3nre2n ma?", meaning: "그는 일본인이니?" },
+            // 중국인, 일본인 질문 삭제됨
             { ch: 2, w: 1, hanzi: "不是,他是加拿大人。", answer: "Bu2 shi4, ta1 shi4 Jia1na2da4re2n.", meaning: "아니, 그는 캐나다인이야." },
 
             // --- [본문 3] ---
             { ch: 3, w: 1, hanzi: "她是谁?", answer: "Ta1 shi4 she2i?", meaning: "그녀는 누구니?" },
             { ch: 3, w: 1, hanzi: "她是我妹妹。", answer: "Ta1 shi4 wo3 me4imei.", meaning: "그녀는 내 여동생이야." },
-            { ch: 3, w: 1, hanzi: "她是我姐姐。", answer: "Ta1 shi4 wo3 jie3jie.", meaning: "그녀는 내 누나(언니)야." },
-            { ch: 3, w: 1, hanzi: "她是我妈妈。", answer: "Ta1 shi4 wo3 ma1ma.", meaning: "그녀는 우리 엄마야." },
+            // 누나, 엄마 삭제됨
             { ch: 3, w: 1, hanzi: "他是谁?", answer: "Ta1 shi4 she2i?", meaning: "그는 누구니?" },
             { ch: 3, w: 1, hanzi: "她很像你!", answer: "Ta1 he3n xia4ng ni3!", meaning: "그녀는 널 많이 닮았어!" },
             { ch: 3, w: 1, hanzi: "她几岁?", answer: "Ta1 ji3 sui4?", meaning: "그녀는 몇 살이니?" },
@@ -142,16 +140,19 @@
             // --- [본문 4] ---
             { ch: 4, w: 1, hanzi: "你有哥哥吗?", answer: "Ni3 yo3u ge1ge ma?", meaning: "너 형(오빠) 있니?" },
             { ch: 4, w: 1, hanzi: "有,这是我哥哥。", answer: "Yo3u, zhe4 shi4 wo3 ge1ge.", meaning: "있어, 이 사람은 우리 형(오빠)이야." },
+            
+            // [NEW] 추가된 문장들 (오타 수정됨)
+            { ch: 4, w: 1, hanzi: "我有两个哥哥。", answer: "Wo3 yo3u lia3ng ge ge1ge.", meaning: "난 형(오빠)이 두 명 있어." },
+            { ch: 4, w: 1, hanzi: "我是独生子。", answer: "Wo3 shi4 du2she1ngzi3.", meaning: "난 외동아들(독자)이야." },
+            { ch: 4, w: 1, hanzi: "我是独生女。", answer: "Wo3 shi4 du2she1ngnv3.", meaning: "난 외동딸이야. (입력: nv3)" },
+
             { ch: 4, w: 1, hanzi: "他上几年级?", answer: "Ta1 sha4ng ji3 nia2nji2?", meaning: "그는 몇 학년이니?" },
-            { ch: 4, w: 1, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년." },
-            { ch: 4, w: 1, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년." },
-            { ch: 4, w: 1, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년." },
-            { ch: 4, w: 1, hanzi: "初中三年级。", answer: "Chu1zho1ng sa1n nia2nji2.", meaning: "중학교 3학년." },
-            { ch: 4, w: 1, hanzi: "高中一年级。", answer: "Ga1ozho1ng yi1 nia2nji2.", meaning: "고등학교 1학년." },
-            { ch: 4, w: 1.2, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년 (빈출)" },
+            
+            // 초6~고1 삭제됨. 고2만 남음.
+            { ch: 4, w: 1.2, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년." },
+            
             { ch: 4, w: 1, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 내 남동생이야." },
             { ch: 4, w: 1, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 내 형(오빠)이야." }
-            // '他是我爸爸。'는 문제에서 삭제됨 (족보에는 있음)
         ];
 
         // ==========================================
@@ -164,14 +165,8 @@
                     { h: "你叫什么名字?", p: "Nǐ jiào shénme míngzi?", m: "이름이 뭐니?" },
                     { h: "我叫金东民。", p: "Wǒ jiào Jīn Dōngmín.", m: "난 김동민이야." },
                     { h: "你是哪国人?", p: "Nǐ shì nǎ guó rén?", m: "어느 나라 사람이니?" },
-                    { 
-                        h: "我是韩国人。", p: "Wǒ shì Hánguórén.", m: "난 한국인이야.",
-                        subs: [
-                            { h: "我是中国人", m: "중국인이야" },
-                            { h: "我是日本人", m: "일본인이야" },
-                            { h: "我是意大利人", m: "이탈리아인이야" }
-                        ]
-                    }
+                    { h: "我是韩国人。", p: "Wǒ shì Hánguórén.", m: "난 한국인이야." },
+                    { h: "我是中国人。", p: "Wǒ shì Zhōngguórén.", m: "난 중국인이야." }
                 ]
             },
             {
@@ -179,13 +174,7 @@
                 lines: [
                     { h: "他很帅!", p: "Tā hěn shuài!", m: "그는 잘생겼어!" },
                     { h: "他是我的朋友。", p: "Tā shì wǒ de péngyou.", m: "그는 내 친구야." },
-                    { 
-                        h: "他是美国人吗?", p: "Tā shì Měiguórén ma?", m: "그는 미국인이니?",
-                        subs: [
-                             { h: "他是中国人吗?", m: "그는 중국인이니?" },
-                             { h: "他是日本人吗?", m: "그는 일본인이니?" }
-                        ]
-                    },
+                    { h: "他是美国人吗?", p: "Tā shì Měiguórén ma?", m: "그는 미국인이니?" },
                     { h: "不是,他是加拿大人。", p: "Bú shì, tā shì Jiānádàrén.", m: "아니, 캐나다인이야." }
                 ]
             },
@@ -196,16 +185,7 @@
                         h: "她是谁?", p: "Tā shì shéi?", m: "그녀는 누구니?",
                         subs: [ { h: "他是谁? (He)", m: "그는 누구니?" } ]
                     },
-                    { 
-                        h: "她是我妹妹。", p: "Tā shì wǒ mèimei.", m: "내 여동생이야.",
-                        subs: [
-                            { h: "姐姐 (jiějie)", m: "누나/언니" },
-                            { h: "妈妈 (māma)", m: "엄마" },
-                            { h: "哥哥 (gēge)", m: "형/오빠" },
-                            { h: "弟弟 (dìdi)", m: "남동생" },
-                            { h: "爸爸 (bàba)", m: "아빠" }
-                        ]
-                    },
+                    { h: "她是我妹妹。", p: "Tā shì wǒ mèimei.", m: "내 여동생이야." },
                     { h: "她很像你!", p: "Tā hěn xiàng nǐ!", m: "너랑 많이 닮았다!" },
                     { h: "她几岁?", p: "Tā jǐ suì?", m: "몇 살이니?" },
                     { 
@@ -232,38 +212,52 @@
                     { 
                         h: "有,这是我哥哥。", p: "Yǒu, zhè shì wǒ gēge.", m: "있어, 이쪽은 우리 형이야.",
                         subs: [
-                            { h: "有, 这是我弟弟 (dìdi)", m: "있어, 내 남동생이야" },
-                            { h: "有, 这是我姐姐 (jie3jie)", m: "있어, 내 누나야" },
-                            { h: "有, 这是我爸爸 (ba4ba)", m: "있어, 우리 아빠야" },
-                            { h: "有, 这是我妈妈 (ma1ma)", m: "있어, 우리 엄마야" }
+                            { h: "有, 这是我弟弟 (dìdi)", m: "내 남동생이야" },
+                            { h: "有, 这是我姐姐 (jie3jie)", m: "내 누나야" },
+                            { h: "有, 这是我爸爸 (ba4ba)", m: "우리 아빠야" },
+                            { h: "有, 这是我妈妈 (ma1ma)", m: "우리 엄마야" }
                         ]
                     },
+                    { h: "我有两个哥哥。", p: "Wǒ yǒu liǎng gè gēge.", m: "난 형이 두 명 있어." },
+                    { h: "我是独生子。", p: "Wǒ shì dúshēngzǐ.", m: "난 외동아들이야." },
+                    { h: "我是独生女。", p: "Wǒ shì dúshēngnǚ.", m: "난 외동딸이야." },
+
                     { h: "他上几年级?", p: "Tā shàng jǐ niánjí?", m: "몇 학년이니?" },
-                    { 
-                        h: "高中二年级。", p: "Gāozhōng èr niánjí.", m: "고등학교 2학년이야.",
-                        subs: [
-                            { h: "小学六年级 (Xiǎoxué liù niánjí)", m: "초등학교 6학년" },
-                            { h: "初中一年级 (Chūzhōng yī niánjí)", m: "중학교 1학년" },
-                            { h: "初中二年级 (Chūzhōng èr niánjí)", m: "중학교 2학년" },
-                            { h: "初中三年级 (Chūzhōng sān niánjí)", m: "중학교 3학년" },
-                            { h: "高中一年级 (Gāozhōng yī niánjí)", m: "고등학교 1학년" }
-                        ]
-                    }
+                    { h: "高中二年级。", p: "Gāozhōng èr niánjí.", m: "고등학교 2학년이야." }
                 ]
             }
         ];
 
+        // ==========================================
+        // [3] 시스템 로직 (오답 노트 포함)
+        // ==========================================
         let currentIdx = 0;
         let currentPool = [];
-        let totalSolved = 0; // 카운터 변수
+        let totalSolved = 0;
+        
+        let wrongCount = 0;
+        let wrongList = []; // 틀린 문제 객체 저장
+        let isRetryMode = false; // 오답 풀기 모드 플래그
 
-        // 모드 변경 시 리셋 및 풀 업데이트
         function resetAndNext() {
-            totalSolved = 0; // 카운터 초기화 (모드 바꿀 때)
+            // 모드를 바꾸면 카운터, 오답 기록 초기화
+            totalSolved = 0;
+            wrongCount = 0;
+            wrongList = [];
+            isRetryMode = false;
+            
+            document.getElementById('wrongDisplay').innerText = `틀림: 0`;
+            document.getElementById('retryBtn').style.display = 'none';
+            document.getElementById('mainTitle').innerText = "🇨🇳 짱 라오쉬 수행 연습";
+            document.getElementById('chapterSelect').disabled = false;
+            
             nextProblem();
         }
 
         function updatePool() {
+            // 오답 모드면 풀 업데이트 안 함 (wrongList 사용)
+            if (isRetryMode) return;
+
             const mode = document.getElementById('chapterSelect').value;
             if (mode == "0") {
                 currentPool = quizDb;
@@ -273,30 +267,60 @@
         }
 
         function getWeightedRandomIndex() {
-            if (currentPool.length === 0) return 0;
+            // 오답 모드: 순서대로 또는 랜덤 (여기선 랜덤)
+            let pool = isRetryMode ? wrongList : currentPool;
+            if (pool.length === 0) return 0;
+            
+            // 가중치 계산 (오답 모드는 가중치 무시하고 랜덤)
+            if (isRetryMode) {
+                return Math.floor(Math.random() * pool.length);
+            }
+
             let totalWeight = 0;
-            for (let i = 0; i < currentPool.length; i++) totalWeight += currentPool[i].w;
+            for (let i = 0; i < pool.length; i++) totalWeight += pool[i].w;
             let randomNum = Math.random() * totalWeight;
-            for (let i = 0; i < currentPool.length; i++) {
-                randomNum -= currentPool[i].w;
+            for (let i = 0; i < pool.length; i++) {
+                randomNum -= pool[i].w;
                 if (randomNum <= 0) return i;
             }
             return 0;
         }
 
         function nextProblem() {
-            updatePool();
+            // 오답 모드인데 다 풀었으면?
+            if (isRetryMode && wrongList.length === 0) {
+                alert("🎉 축하합니다! 틀린 문제를 모두 해결했습니다.\n원래 모드로 돌아갑니다.");
+                isRetryMode = false;
+                document.getElementById('retryBtn').style.display = 'none';
+                document.getElementById('mainTitle').innerText = "🇨🇳 짱 라오쉬 수행 연습";
+                document.getElementById('chapterSelect').disabled = false;
+                document.getElementById('mainTitle').style.color = "#2c3e50";
+                // 원래 풀로 복귀
+                updatePool();
+            }
+
+            if (!isRetryMode) updatePool();
+
+            // 문제 다 풀었으면 (필터링된 풀이 비었을 때) - 예외처리
+            if (currentPool.length === 0 && !isRetryMode) {
+                alert("해당 단원에 문제가 없습니다.");
+                return;
+            }
             
-            // 카운터 증가 (문제 로딩 시점)
-            totalSolved++;
+            // 카운터 증가 (일반 모드일 때만)
+            if (!isRetryMode) totalSolved++;
             
-            // 카운터 표시 업데이트 (예: 진행: 5번째 (총 42문제 중))
-            // 전체 랜덤일 땐 전체 개수, 모드일 땐 그 모드 개수 표시
-            let poolSize = currentPool.length;
-            document.getElementById('counterDisplay').innerText = `진행: ${totalSolved}번째 (현재 ${poolSize}문제 중)`;
+            // 진행 표시 업데이트
+            let poolSize = isRetryMode ? wrongList.length : currentPool.length;
+            let prefix = isRetryMode ? "오답 남음" : "진행";
+            let countText = isRetryMode ? `${poolSize}문제` : `${totalSolved}번째`;
+            document.getElementById('counterDisplay').innerText = `${prefix}: ${countText}`;
 
             currentIdx = getWeightedRandomIndex();
-            const q = currentPool[currentIdx];
+            
+            // 현재 문제 가져오기
+            const q = isRetryMode ? wrongList[currentIdx] : currentPool[currentIdx];
+            
             document.getElementById('question').innerText = q.hanzi;
             document.getElementById('answerInput').value = '';
             document.getElementById('result').innerText = '';
@@ -305,8 +329,10 @@
 
         function checkAnswer() {
             const userAns = document.getElementById('answerInput').value.trim();
-            const correctAns = currentPool[currentIdx].answer;
-            const meaning = currentPool[currentIdx].meaning;
+            // 현재 문제 정답 확인
+            const q = isRetryMode ? wrongList[currentIdx] : currentPool[currentIdx];
+            const correctAns = q.answer;
+            const meaning = q.meaning;
 
             const cleanUser = userAns.toLowerCase().replace(/\s+/g, ' ');
             const cleanCorrect = correctAns.toLowerCase().replace(/\s+/g, ' ');
@@ -314,15 +340,49 @@
 
             if (cleanUser === cleanCorrect) {
                 resDiv.innerHTML = `<span class='correct'>정답입니다! 🎉</span><br><span class='meaning-text'>(${meaning})</span>`;
+                
+                // 오답 모드라면, 맞힌 문제는 리스트에서 삭제
+                if (isRetryMode) {
+                    wrongList.splice(currentIdx, 1);
+                }
+
                 setTimeout(nextProblem, 2000);
             } else {
                 resDiv.innerHTML = `<span class='wrong'>오답! 정답: ${correctAns}</span><br><span class='meaning-text'>(${meaning})</span>`;
+                
+                // 일반 모드에서 틀렸으면 오답 리스트에 추가 (중복 방지)
+                if (!isRetryMode) {
+                    // 이미 있는지 확인
+                    const alreadyWrong = wrongList.some(item => item.hanzi === q.hanzi);
+                    if (!alreadyWrong) {
+                        wrongList.push(q);
+                        wrongCount++;
+                        document.getElementById('wrongDisplay').innerText = `틀림: ${wrongCount}`;
+                        // 틀린게 생겼으니 버튼 표시
+                        document.getElementById('retryBtn').style.display = 'block';
+                    }
+                }
+            }
+        }
+        
+        // 오답 다시 풀기 모드 시작 함수
+        function startRetryMode() {
+            if (wrongList.length === 0) {
+                alert("틀린 문제가 없습니다!");
+                return;
+            }
+            if (confirm(`현재 틀린 문제가 ${wrongList.length}개 있습니다.\n오답 집중 공략을 시작할까요?`)) {
+                isRetryMode = true;
+                document.getElementById('mainTitle').innerText = "🔥 지옥의 오답 특훈 🔥";
+                document.getElementById('mainTitle').style.color = "#d32f2f";
+                document.getElementById('chapterSelect').disabled = true; // 모드 변경 막기
+                nextProblem();
             }
         }
 
         document.getElementById("answerInput").addEventListener("keypress", function(e) { if (e.key === "Enter") checkAnswer(); });
 
-        // [족보 렌더링 + 참고 박스 추가]
+        // [족보 렌더링]
         function renderStudyBody() {
             const container = document.getElementById('textBody');
             let html = '<h3 style="margin-top:0; color:#333; border-bottom:2px solid #333; padding-bottom:10px;">📚 수행평가 족보</h3>';
@@ -358,6 +418,7 @@
                     <li><span class="highlight-code">Tā hěn shuài!</span><br>여기서 <b>hěn</b>은 해석하지 않습니다. (문법적 요소)</li>
                     <li><span class="highlight-code">Jīnnián bā suì.</span><br>문장 끝의 <b>suì(살)</b>는 생략 가능합니다. (예: Jīnnián bā.)</li>
                     <li><span class="highlight-code">Tā shàng jǐ niánjí?</span><br>동사 <b>shàng(다니다)</b>은 생략 가능합니다.</li>
+                    <li><span class="highlight-code">nu..3 (ü)</span><br>자판 입력 시 <b>nv3</b>로 입력하세요.</li>
                 </ul>
             </div>
             `;
@@ -376,8 +437,7 @@
             }
         }
 
-        // 초기 시작
-        // totalSolved는 nextProblem 안에서 1로 증가됨
+        // 초기 실행
         nextProblem();
     </script>
 </body>
