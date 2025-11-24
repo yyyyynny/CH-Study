@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>짱 라오쉬 수행 연습 (Ultimate)</title>
+    <title>짱 라오쉬 수행 연습 (Ultimate Hybrid)</title>
     <style>
         /* [디자인] 기본 설정 */
         html { overflow-y: scroll; }
@@ -49,7 +49,7 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
         }
 
-        /* [워터마크] */
+        /* [워터마크] - 사용자 커스텀 (진하게) */
         .watermark {
             position: fixed; bottom: 15px; right: 20px; font-size: 14px; color: #888;
             font-family: 'Segoe Print', 'Chalkboard SE', 'Comic Sans MS', sans-serif;
@@ -58,6 +58,8 @@
         }
         .watermark:hover { opacity: 0.8; transform: scale(1.05); }
         .watermark:active { transform: scale(0.95); }
+        
+        /* 폭죽 입자 (60% 둥글기) */
         .firework-particle { position: fixed; width: 6px; height: 6px; border-radius: 60%; pointer-events: none; z-index: 10000; }
 
         /* 테마 스타일 */
@@ -162,7 +164,7 @@
 
     <script>
         // ==========================================
-        // [0] 이스터에그
+        // [0] 이스터에그: 폭죽
         // ==========================================
         function triggerFireworks(e) {
             const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500'];
@@ -186,43 +188,50 @@
         }
 
         // ==========================================
-        // [1] TTS (3단 방어 로직)
+        // [1] TTS (하이브리드 로직: PC 고음질 + 모바일 호환 + 경고)
         // ==========================================
+        let voicesLoaded = false;
+
         function speak(text) {
             if (!window.speechSynthesis) { alert("TTS 미지원 브라우저"); return; }
-            window.speechSynthesis.cancel();
-            
+            window.speechSynthesis.cancel(); // 기존 재생 취소
+
             const utterance = new SpeechSynthesisUtterance(text);
-            // 기본값 설정 (안전장치)
-            utterance.lang = 'zh-CN';
-            utterance.rate = 0.85;
+            utterance.lang = 'zh-CN'; // 기본 언어 설정
+            utterance.rate = 0.85;    // 속도
 
             const voices = window.speechSynthesis.getVoices();
             
-            // 1순위: 구글/마소 (고음질)
+            // 1. 고음질(Google/Microsoft) 우선 검색
             let targetVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Google') || v.name.includes('Microsoft')));
             
-            // 2순위: 없으면 그냥 중국어 아무거나
+            // 2. 없으면 일반 중국어(zh) 검색 (모바일용 Fallback)
             if (!targetVoice) {
                 targetVoice = voices.find(v => v.lang.includes('zh'));
             }
 
-            // 목소리가 발견되면 설정
+            // 3. 목소리 찾았으면 적용
             if (targetVoice) {
                 utterance.voice = targetVoice;
             }
 
-            // 에러 핸들링 (진짜 재생 안될 때만 경고)
-            utterance.onerror = function(e) {
-                console.error("TTS Error:", e);
-                if (e.error === 'not-allowed' || e.error === 'synthesis-unavailable') {
-                    alert("기기 설정에서 '중국어 음성 데이터'를 다운로드해주세요.");
-                }
-            };
+            // 4. 음성 데이터가 아예 없는 경우 체크 (경고)
+            if (voices.length > 0 && !targetVoice) {
+                alert("🚨 오류: 기기에 '중국어 음성 데이터'가 없습니다!\n설정에서 다운로드해주세요.");
+                return;
+            }
 
-            window.speechSynthesis.speak(utterance);
+            // 안드로이드 크롬 버그 방지용 지연 실행
+            setTimeout(() => {
+                window.speechSynthesis.speak(utterance);
+            }, 10);
         }
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+        // 목소리 목록 로드 이벤트
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+            voicesLoaded = true;
+        };
 
         function speakCurrentQuestion() {
             const text = document.getElementById('question').innerText;
@@ -230,7 +239,7 @@
         }
 
         // ==========================================
-        // [2] 문제 데이터 (Quiz DB)
+        // [2] 문제 데이터 (Quiz DB) - [직역] 철저 반영
         // ==========================================
         const quizDb = [
             // --- [본문 1] ---
@@ -280,11 +289,11 @@
             { ch: 4, w: 1, isVar: false, hanzi: "他上几年级?", answer: "Ta1 sha4ng ji3 nia2nji2?", meaning: "그는 몇 학년(에) 다니니?" },
             { ch: 4, w: 1.2, isVar: false, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년이다." },
             
-            // 응용: 가족 (직역)
+            // 응용: 가족
             { ch: 4, w: 1, isVar: true, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 나의 남동생이다. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 나의 형(오빠)이다. (응용)" },
             
-            // 응용: 학년 (직역)
+            // 응용: 학년
             { ch: 4, w: 1, isVar: true, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년이다. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년이다. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년이다. (응용)" },
