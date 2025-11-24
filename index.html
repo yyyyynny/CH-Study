@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>짱 라오쉬 수행 연습</title>
+    <title>짱 라오쉬 수행 연습 (Ultimate)</title>
     <style>
         /* [디자인] 기본 설정 */
         html { overflow-y: scroll; }
@@ -49,7 +49,7 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
         }
 
-        /* [워터마크 수정됨] */
+        /* [워터마크] */
         .watermark {
             position: fixed; bottom: 15px; right: 20px; font-size: 14px; color: #888;
             font-family: 'Segoe Print', 'Chalkboard SE', 'Comic Sans MS', sans-serif;
@@ -68,7 +68,7 @@
         .dev-mode-card h2, .dev-mode-card .subtitle, .dev-mode-card #question { color: #0f0; text-shadow: 0 0 5px #0f0; }
         .dev-mode-card input { background-color: #000; color: #0f0; border-color: #0f0; }
 
-        /* 본문 보기 & 집중학습 선택창 */
+        /* 본문 보기 & 집중학습 */
         .view-btn { background-color: #34495e; color: white; width: 100%; max-width: 550px; padding: 15px; border-radius: 15px; margin-top: 10px; font-size: 1.1em; border: none; cursor: pointer; }
         #textBody, #intensiveSetup { display: none; width: 95%; max-width: 600px; margin-bottom: 50px; z-index: 20; }
         
@@ -186,17 +186,40 @@
         }
 
         // ==========================================
-        // [1] TTS
+        // [1] TTS (3단 방어 로직)
         // ==========================================
         function speak(text) {
-            if (!window.speechSynthesis) { alert("TTS 미지원"); return; }
+            if (!window.speechSynthesis) { alert("TTS 미지원 브라우저"); return; }
             window.speechSynthesis.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
+            // 기본값 설정 (안전장치)
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.85;
+
             const voices = window.speechSynthesis.getVoices();
-            const targetVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Google') || v.name.includes('Microsoft')));
-            if (targetVoice) { utterance.voice = targetVoice; }
-            else { utterance.lang = 'zh-CN'; }
-            utterance.rate = 0.85; 
+            
+            // 1순위: 구글/마소 (고음질)
+            let targetVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Google') || v.name.includes('Microsoft')));
+            
+            // 2순위: 없으면 그냥 중국어 아무거나
+            if (!targetVoice) {
+                targetVoice = voices.find(v => v.lang.includes('zh'));
+            }
+
+            // 목소리가 발견되면 설정
+            if (targetVoice) {
+                utterance.voice = targetVoice;
+            }
+
+            // 에러 핸들링 (진짜 재생 안될 때만 경고)
+            utterance.onerror = function(e) {
+                console.error("TTS Error:", e);
+                if (e.error === 'not-allowed' || e.error === 'synthesis-unavailable') {
+                    alert("기기 설정에서 '중국어 음성 데이터'를 다운로드해주세요.");
+                }
+            };
+
             window.speechSynthesis.speak(utterance);
         }
         window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
@@ -207,7 +230,7 @@
         }
 
         // ==========================================
-        // [2] 문제 데이터 (Quiz DB) - 직역 반영 완료
+        // [2] 문제 데이터 (Quiz DB)
         // ==========================================
         const quizDb = [
             // --- [본문 1] ---
@@ -232,6 +255,8 @@
             { ch: 3, w: 1, isVar: false, hanzi: "她很像你!", answer: "Ta1 he3n xia4ng ni3!", meaning: "그녀는 너를 매우 닮았다!" },
             { ch: 3, w: 1, isVar: false, hanzi: "她几岁?", answer: "Ta1 ji3 sui4?", meaning: "그녀는 몇 살이니?" },
             { ch: 3, w: 1, isVar: false, hanzi: "今年八岁。", answer: "Ji1nnia2n ba1 sui4.", meaning: "올해 8살이다." },
+            
+            // 응용: 나이
             { ch: 3, w: 1, isVar: true, hanzi: "九岁。", answer: "Jiu3 sui4.", meaning: "9살 (응용)" },
             { ch: 3, w: 1, isVar: true, hanzi: "十岁。", answer: "Shi2 sui4.", meaning: "10살 (응용)" },
             { ch: 3, w: 1, isVar: true, hanzi: "十一岁。", answer: "Shi2yi1 sui4.", meaning: "11살 (응용)" },
@@ -246,22 +271,29 @@
             // --- [본문 4] ---
             { ch: 4, w: 1, isVar: false, hanzi: "你有哥哥吗?", answer: "Ni3 yo3u ge1ge ma?", meaning: "너는 형(오빠)이 있니?" },
             { ch: 4, w: 1, isVar: false, hanzi: "有,这是我哥哥。", answer: "Yo3u, zhe4 shi4 wo3 ge1ge.", meaning: "있어, 이 사람은 나의 형(오빠)이다." },
+            
+            // 응용: 가족/형제
             { ch: 4, w: 1, isVar: true, hanzi: "我有两个哥哥。", answer: "Wo3 yo3u lia3ng ge ge1ge.", meaning: "나는 두 명의 형(오빠)이 있다. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "我是独生子。", answer: "Wo3 shi4 du2she1ngzi3.", meaning: "나는 독자(외동아들)이다. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "我是独生女。", answer: "Wo3 shi4 du2she1ngnv3.", meaning: "나는 독녀(외동딸)이다. (응용)" },
+            
             { ch: 4, w: 1, isVar: false, hanzi: "他上几年级?", answer: "Ta1 sha4ng ji3 nia2nji2?", meaning: "그는 몇 학년(에) 다니니?" },
             { ch: 4, w: 1.2, isVar: false, hanzi: "高中二年级。", answer: "Ga1ozho1ng er4 nia2nji2.", meaning: "고등학교 2학년이다." },
+            
+            // 응용: 가족 (직역)
             { ch: 4, w: 1, isVar: true, hanzi: "他是我弟弟。", answer: "Ta1 shi4 wo3 di4di.", meaning: "그는 나의 남동생이다. (응용)" },
             { ch: 4, w: 1, isVar: true, hanzi: "他是我哥哥。", answer: "Ta1 shi4 wo3 ge1ge.", meaning: "그는 나의 형(오빠)이다. (응용)" },
-            { ch: 4, w: 1, isVar: true, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년. (응용)" },
-            { ch: 4, w: 1, isVar: true, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년. (응용)" },
-            { ch: 4, w: 1, isVar: true, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년. (응용)" },
-            { ch: 4, w: 1, isVar: true, hanzi: "初中三年级。", answer: "Chu1zho1ng sa1n nia2nji2.", meaning: "중학교 3학년. (응용)" },
-            { ch: 4, w: 1, isVar: true, hanzi: "高中一年级。", answer: "Ga1ozho1ng yi1 nia2nji2.", meaning: "고등학교 1학년. (응용)" }
+            
+            // 응용: 학년 (직역)
+            { ch: 4, w: 1, isVar: true, hanzi: "小学六年级。", answer: "Xia3oxue2 liu4 nia2nji2.", meaning: "초등학교 6학년이다. (응용)" },
+            { ch: 4, w: 1, isVar: true, hanzi: "初中一年级。", answer: "Chu1zho1ng yi1 nia2nji2.", meaning: "중학교 1학년이다. (응용)" },
+            { ch: 4, w: 1, isVar: true, hanzi: "初中二年级。", answer: "Chu1zho1ng er4 nia2nji2.", meaning: "중학교 2학년이다. (응용)" },
+            { ch: 4, w: 1, isVar: true, hanzi: "初中三年级。", answer: "Chu1zho1ng sa1n nia2nji2.", meaning: "중학교 3학년이다. (응용)" },
+            { ch: 4, w: 1, isVar: true, hanzi: "高中一年级。", answer: "Ga1ozho1ng yi1 nia2nji2.", meaning: "고등학교 1학년이다. (응용)" }
         ];
 
         // ==========================================
-        // [3] 족보 데이터 (직역 수정 완료)
+        // [3] 족보 데이터 (직역 업데이트 완료)
         // ==========================================
         const studyContents = [
             {
